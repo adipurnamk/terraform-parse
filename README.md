@@ -97,10 +97,102 @@ metrics:
   path: /metrics
 ```
 
+## Testing
+
+### FastAPI Service Testing
+
+#### Using Docker Compose
+
+The project includes Docker Compose configurations for testing on both Linux-based Docker and Docker Desktop.
+
+**Run the service:**
+```bash
+docker-compose up -d terraform-parse-service
+```
+
+**Run tests:**
+```bash
+docker-compose --profile test run --rm test-runner
+```
+
+**Stop the service:**
+```bash
+docker-compose down
+```
+
+#### Local Testing
+
+```bash
+cd terraform_parse_service
+make install
+make test
+```
+
+### Terraform Testing with LocalStack
+
+LocalStack provides a local AWS cloud stack for testing Terraform without real AWS resources.
+
+**Start LocalStack:**
+```bash
+docker-compose -f docker-compose.localstack.yml up -d
+```
+
+**Wait for LocalStack to be healthy:**
+```bash
+curl http://localhost:4566/_localstack/health
+```
+
+**Run Terraform tests:**
+```bash
+./scripts/test-terraform.sh
+```
+
+Or manually:
+```bash
+cd terraform
+# Initialize with LocalStack backend
+terraform init \
+    -backend-config="bucket=terraform-state" \
+    -backend-config="key=terraform.tfstate" \
+    -backend-config="region=us-east-1" \
+    -backend-config="endpoint=http://localhost:4566" \
+    -backend-config="skip_credentials_validation=true" \
+    -backend-config="skip_metadata_api_check=true" \
+    -backend-config="skip_region_validation=true" \
+    -backend-config="force_path_style=true"
+
+# Validate
+terraform validate
+
+# Plan (note: EKS has limited support in LocalStack)
+terraform plan -var-file=env/dev.tfvars
+```
+
+**Stop LocalStack:**
+```bash
+docker-compose -f docker-compose.localstack.yml down
+```
+
+**Note:** LocalStack has limited support for EKS resources. For full EKS testing, use a real AWS account with appropriate credentials.
+
+### Environment Configuration
+
+Copy `env.example` to `.env` and adjust values:
+```bash
+cp env.example .env
+```
+
+Key environment variables:
+- `TPS_AWS_REGION` - Default AWS region for generated Terraform
+- `TPS_TERRAFORM_OUTPUT_DIR` - Directory for generated `.tf` files
+- `AWS_ENDPOINT_URL` - LocalStack endpoint (for testing)
+
 ## Validation checklist
 
 - `make test` succeeds for the FastAPI service (pytest + httpx).
+- `docker-compose --profile test run --rm test-runner` passes all tests.
 - `docker run ... helm lint` and `helm template` run clean.
 - Terraform code passes `terraform validate` (after backend configuration) and supports environment-specific tfvars/workspaces.
+- `./scripts/test-terraform.sh` validates Terraform configuration with LocalStack.
 
 Refer to `NOTES.md` for a detailed explanation of the design choices, additional improvements to consider, and how AI assisted in the workflow.

@@ -1,0 +1,50 @@
+version: '3.8'
+
+services:
+  terraform-parse-service:
+    build:
+      context: ./terraform_parse_service
+      dockerfile: Dockerfile
+    container_name: terraform-parse-service
+    ports:
+      - "8080:8080"
+    environment:
+      - TPS_AWS_REGION=${TPS_AWS_REGION:-eu-west-1}
+      - TPS_TERRAFORM_OUTPUT_DIR=${TPS_TERRAFORM_OUTPUT_DIR:-/app/generated}
+    volumes:
+      - ./terraform_parse_service/generated:/app/generated
+      - ./terraform_parse_service:/app
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8080/api/healthz')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    networks:
+      - terraform-parse-network
+
+  test-runner:
+    build:
+      context: ./terraform_parse_service
+      dockerfile: Dockerfile
+    container_name: terraform-parse-test
+    command: >
+      sh -c "
+        pip install --no-cache-dir poetry &&
+        poetry install --with dev &&
+        poetry run pytest -v
+      "
+    environment:
+      - TPS_TERRAFORM_OUTPUT_DIR=/tmp/test-generated
+    volumes:
+      - ./terraform_parse_service:/app
+    working_dir: /app
+    networks:
+      - terraform-parse-network
+    profiles:
+      - test
+
+networks:
+  terraform-parse-network:
+    driver: bridge
+
