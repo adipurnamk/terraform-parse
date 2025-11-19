@@ -1,0 +1,9 @@
+1. Get the application URL by running these commands:
+{{- if contains "LoadBalancer" .Values.service.type }}
+  export SERVICE_IP=$(kubectl get svc {{ include "terraform-parse.fullname" . }} -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+  echo "Visit http://${SERVICE_IP}:{{ .Values.service.port }}/api/healthz"
+{{- else }}
+  kubectl port-forward svc/{{ include "terraform-parse.fullname" . }} 8080:{{ .Values.service.port }}
+  curl -s localhost:8080/api/healthz
+{{- end }}
+
