@@ -37,7 +37,7 @@ variable "cluster_name_override" {
 variable "cluster_version" {
   description = "EKS control plane version."
   type        = string
-  default     = "1.27"
+  default     = "1.33"
 }
 
 variable "enable_cluster_public_access" {
