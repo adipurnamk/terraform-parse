@@ -1,198 +1,49 @@
-# Terraform-Parse Solution
+<div align="center">
+   <img src="/img/logo.svg?raw=true" width=600 style="background-color:white;">
+</div>
 
-This repository now contains a working implementation of a Terraform rendering API, hardened Terraform infrastructure configuration, and a production-ready Helm chart for shipping the service to Kubernetes.
+# SRE Technical Take-Home Assignment : Terraform-Parse (Terraform + Helm)
 
-## Repository layout
+Welcome to the Tripla SRE take-home assignment! 🧑‍💻 This exercise is designed to simulate a real-world scenario where you'll tackle challenges across infrastructure, platform engineering, and automation.
 
-- `terraform_parse_service/` – FastAPI service that turns JSON payloads into Terraform `.tf` files.
-- `terraform/` – Modularized Terraform stack with EKS + S3, environment tfvars, and guardrails.
-- `helm/` – Single-service Helm chart with probes, autoscaling toggles, and Kind helper Makefile.
-- `NOTES.md` – Deep dive into design decisions, trade-offs, and follow-up ideas.
+⚠️ **Before you begin**, please review the main [FAQ](/README.md#frequently-asked-questions). It contains important information, **including our specific guidelines on how to submit your solution.**
 
-## Prerequisites
+## Repo structure
+- `terraform/` : Terraform code (intentionally imperfect) for an EKS cluster and an S3 bucket .
+- `helm/` : A Helm chart (intentionally buggy) that deploys an API service .
 
-- Python 3.11+, [Poetry](https://python-poetry.org/) 1.7+
-- Docker + Kind (or any Kubernetes cluster)
-- Terraform 1.6+
-- AWS credentials that can create EKS/S3 resources (for real applies)
-- Helm 3 (can be run via the provided Docker invocation)
-
-## Terraform Parse API service
-
-```bash
-cd terraform-parse/terraform_parse_service
-make install        # poetry install --sync
-make run            # uvicorn app.main:app --reload --port 8080
-```
-
-Sample request:
-
-```bash
-curl -X POST http://localhost:8080/api/generate -H 'Content-Type: application/json' -d '{
-  "payload": {
-    "properties": {
-      "aws-region": "eu-west-1",
-      "bucket-name": "tripla-bucket",
-      "acl": "private",
-      "environment": "dev"
+## Candidate Tasks
+### Create `Terraform-Parse` Service
+1. Please Create a backend service to render an API request into terraform file
+   (You can use any language/framework you’re comfortable with (e.g., Python/Flask, Node/Express, Go/Fiber). Keep it minimal.)
+2. Service needs to receive rest api request (`POST` method) with certain payload.
+    ```
+    {
+    "payload":{
+        "properties":{
+            "aws-region":"eu-west-1",
+            "acl":"private",
+            "bucket-name": "tripla-bucket"
+        }
     }
-  }
-}'
-```
+    }
+    ```
+3. Parse this payload and render to Terraform file (.tf) for S3 bucket creation. Resources created should at least include:
+    - provider
+    - aws_s3_bucket
+    - aws_s3_bucket_acl
+4. Please put your code to folder `terraform_parse_service`
 
-The response returns the file path under `./generated/` plus a Terraform preview. All defaults can be overridden via env vars that start with `TPS_` (see `app/config.py`).
+### Infrastructure (Terraform)
+5. You have provided a set of Terraform code to create an EKS. Please review the code, identify issues or design flaws.
+6. Adjust or refactor be safe and maintainable for multiple environments.
 
-### Tests & lint
+### Platform (Kubernetes + Helm)
+7. You are provided a set of Helm code. Please review and deploy `Terraform-Parse` service into a Kubernetes cluster (local kind/minikube is fine).
+8. Debug and fix if you find services don't route properly.
+9. Improve other aspects as you see fit.
 
-```bash
-cd terraform-parse/terraform_parse_service
-make lint
-make test
-```
-
-## Terraform workflow (multi-env)
-
-The Terraform code was broken into local modules (`modules/network`, `modules/eks`, `modules/s3_bucket`) and hardened with tagging, lifecycle policies, input validation, and an S3 backend stub. Environment overlays live in `terraform/env/`.
-
-```bash
-cd terraform-parse/terraform
-cp env/dev.tfvars myenv.tfvars              # adjust IDs/ARNs before applying
-terraform init                              # configure backend "s3" before first init
-terraform workspace select dev || terraform workspace new dev
-terraform plan -var-file=myenv.tfvars
-terraform apply -var-file=myenv.tfvars
-```
-
-Key notes:
-
-- `env/*.tfvars` hold region, VPC, subnet, and bucket settings for `dev`, `staging`, and `prod`.
-- The backend block is present but empty—fill in bucket, key, region, and DynamoDB table per environment before running `terraform init`.
-- Guardrails: lifecycle `prevent_destroy` on the bucket (unless `bucket_force_destroy=true`), validations on environment/ACL/node sizes, default tags, and control-plane log toggles.
-
-## Helm deployment
-
-The Helm chart now represents only the Terraform-Parse API (single Deployment + Service + optional HPA/ServiceMonitor). Use Dockerized Helm + Kind for a local walkthrough:
-
-```bash
-cd terraform-parse/helm
-make kind-up                             # creates kind cluster named "tripla"
-make image IMAGE_REPO=terraform-parse IMAGE_TAG=dev
-make load                                # loads the image into kind
-make deploy                              # helm upgrade --install ...
-
-# Validate
-docker run --rm -v $(pwd):/charts -w /charts alpine/helm:3.15.2 lint .
-kubectl port-forward svc/terraform-parse-tripla-apps 8080:8080
-curl localhost:8080/api/healthz
-```
-
-Toggle autoscaling and ServiceMonitor features via `values.yaml`:
-
-```yaml
-autoscaling:
-  enabled: true
-metrics:
-  enabled: true
-  scrapePort: http
-  path: /metrics
-```
-
-## Testing
-
-### FastAPI Service Testing
-
-#### Using Docker Compose
-
-The project includes Docker Compose configurations for testing on both Linux-based Docker and Docker Desktop.
-
-**Run the service:**
-```bash
-docker-compose up -d terraform-parse-service
-```
-
-**Run tests:**
-```bash
-docker-compose --profile test run --rm test-runner
-```
-
-**Stop the service:**
-```bash
-docker-compose down
-```
-
-#### Local Testing
-
-```bash
-cd terraform_parse_service
-make install
-make test
-```
-
-### Terraform Testing with LocalStack
-
-LocalStack provides a local AWS cloud stack for testing Terraform without real AWS resources.
-
-**Start LocalStack:**
-```bash
-docker-compose -f docker-compose.localstack.yml up -d
-```
-
-**Wait for LocalStack to be healthy:**
-```bash
-curl http://localhost:4566/_localstack/health
-```
-
-**Run Terraform tests:**
-```bash
-./scripts/test-terraform.sh
-```
-
-Or manually:
-```bash
-cd terraform
-# Initialize with LocalStack backend
-terraform init \
-    -backend-config="bucket=terraform-state" \
-    -backend-config="key=terraform.tfstate" \
-    -backend-config="region=us-east-1" \
-    -backend-config="endpoint=http://localhost:4566" \
-    -backend-config="skip_credentials_validation=true" \
-    -backend-config="skip_metadata_api_check=true" \
-    -backend-config="skip_region_validation=true" \
-    -backend-config="force_path_style=true"
-
-# Validate
-terraform validate
-
-# Plan (note: EKS has limited support in LocalStack)
-terraform plan -var-file=env/dev.tfvars
-```
-
-**Stop LocalStack:**
-```bash
-docker-compose -f docker-compose.localstack.yml down
-```
-
-**Note:** LocalStack has limited support for EKS resources. For full EKS testing, use a real AWS account with appropriate credentials.
-
-### Environment Configuration
-
-Copy `env.example` to `.env` and adjust values:
-```bash
-cp env.example .env
-```
-
-Key environment variables:
-- `TPS_AWS_REGION` - Default AWS region for generated Terraform
-- `TPS_TERRAFORM_OUTPUT_DIR` - Directory for generated `.tf` files
-- `AWS_ENDPOINT_URL` - LocalStack endpoint (for testing)
-
-## Validation checklist
-
-- `make test` succeeds for the FastAPI service (pytest + httpx).
-- `docker-compose --profile test run --rm test-runner` passes all tests.
-- `docker run ... helm lint` and `helm template` run clean.
-- Terraform code passes `terraform validate` (after backend configuration) and supports environment-specific tfvars/workspaces.
-- `./scripts/test-terraform.sh` validates Terraform configuration with LocalStack.
-
-Refer to `NOTES.md` for a detailed explanation of the design choices, additional improvements to consider, and how AI assisted in the workflow.
+## Minimum Deliverables
+1.  A link to your Git repository containing the complete solution.
+2.  Clear instructions in the `README.md` on how to build, test, and run your service.
+3. `NOTES.md` with explanations for API service creation, Terraform fixes, Helm fixes, multi-env thoughts, and any AI usage.
