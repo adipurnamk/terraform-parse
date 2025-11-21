@@ -13,5 +13,16 @@
 - Still to enhance: layer in VPC/subnet creation (today we require existing networking), add managed add-ons (CoreDNS, VPC CNI, KubeProxy pinning), and bolt on automated guardrails such as AWS Config rules or OPA tests in CI.
 
 - Part 3 (Helm): Explain the problems you encountered with the chart, how you addressed them, and how you validated your changes.
+$helm lint .
+==> Linting .
+[INFO] Chart.yaml: icon is recommended
+[ERROR] templates/backend-deployment.yaml: unable to parse YAML: error converting YAML to JSON: yaml: line 2: mapping values are not allowed in this context
+
+$ helm template ./helm --debug
+---
+Error: YAML parse error on tripla-apps/templates/backend-deployment.yaml: error converting YAML to JSON: yaml: line 2: mapping values are not allowed in this context
+helm.go:92: 2025-11-21 06:33:23.083172234 +0700 WIB m=+0.236833810 [debug] error converting YAML to JSON: yaml: line 2: mapping values are not allowed in this context
+---
+
 - Part 4 (System Behavior): Share your thoughts on how this setup might behave under load or in failure scenarios, and what strategies could make it more resilient in the long term.
 - Part 5 (Approach & Tools): Outline the approach you took to complete the task, including any resources, tools, or methods that supported your work.
