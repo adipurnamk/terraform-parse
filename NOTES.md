@@ -13,16 +13,27 @@
 - Still to enhance: layer in VPC/subnet creation (today we require existing networking), add managed add-ons (CoreDNS, VPC CNI, KubeProxy pinning), and bolt on automated guardrails such as AWS Config rules or OPA tests in CI.
 
 - Part 3 (Helm): Explain the problems you encountered with the chart, how you addressed them, and how you validated your changes.
-$helm lint .
-==> Linting .
-[INFO] Chart.yaml: icon is recommended
-[ERROR] templates/backend-deployment.yaml: unable to parse YAML: error converting YAML to JSON: yaml: line 2: mapping values are not allowed in this context
 
-$ helm template ./helm --debug
----
-Error: YAML parse error on tripla-apps/templates/backend-deployment.yaml: error converting YAML to JSON: yaml: line 2: mapping values are not allowed in this context
-helm.go:92: 2025-11-21 06:33:23.083172234 +0700 WIB m=+0.236833810 [debug] error converting YAML to JSON: yaml: line 2: mapping values are not allowed in this context
----
+- Problems Encountered:
+  - **Label Mismatch**: Frontend deployment labels (`app: frontend-app`) didn't match service selectors (`app: frontend`), causing routing failures.
+  - **Hardcoded Configuration**: Replicas, images, and ports were hardcoded, making the chart inflexible.
+  - **Port Mismatches**: Container ports were missing or inconsistent with service target ports.
+  - **Generic Structure**: The chart deployed generic frontend/backend services instead of the specific `terraform-parse` application.
+  - **Missing Resources**: No resource requests/limits were defined, preventing HPA from functioning correctly.
+
+- Solutions:
+  - **Refactored Templates**: Created a unified `terraform-parse` deployment/service using `_helpers.tpl` for consistent `app.kubernetes.io/*` labels.
+  - **Full Configuration**: Moved all hardcoded values to `values.yaml` (images, ports, resources, replicas).
+  - **Resource Management**: Added resource requests/limits and configured a conditional HPA with CPU/memory metrics.
+  - **Health Checks**: Implemented liveness and readiness probes targeting `/api/healthz`.
+
+- Validation:
+  - `helm lint` now passes (fixed "mapping values not allowed" errors).
+  - `helm template` confirms correct label matching and value substitution.
+  - Verified port definitions and resource rendering in generated manifests.
+
 
 - Part 4 (System Behavior): Share your thoughts on how this setup might behave under load or in failure scenarios, and what strategies could make it more resilient in the long term.
+
+
 - Part 5 (Approach & Tools): Outline the approach you took to complete the task, including any resources, tools, or methods that supported your work.
