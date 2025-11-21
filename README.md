@@ -1,5 +1,5 @@
 <div align="center">
-   <img src="/img/logo.svg?raw=true" width=600 style="background-color:white;">
+   <img src="./img/logo.svg?raw=true" width=600 style="background-color:white;">
 </div>
 
 # SRE Technical Take-Home Assignment : Terraform-Parse (Terraform + Helm)
