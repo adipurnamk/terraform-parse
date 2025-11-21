@@ -35,5 +35,21 @@
 
 - Part 4 (System Behavior): Share your thoughts on how this setup might behave under load or in failure scenarios, and what strategies could make it more resilient in the long term.
 
+- Load Balancing: The chart currently uses a `ClusterIP` service type, which is not suitable for production environments. A `LoadBalancer` or `NodePort` would be more appropriate for external access.
+
+- Failure Scenarios:
+  - **Resource Exhaustion**: If the application consumes too many resources, the HPA will scale up to meet demand. However, if the cluster cannot provision additional nodes, the application may experience high latency or timeouts. Can be solved using autoscaler or Karpenter to combine with AWS EKS, also better to also make rate limiting to the application to prevent abuse.
+
+- Resilience Strategies:
+  - **Horizontal Pod Autoscaling (HPA)**: Already implemented with CPU and memory metrics.
+  - **Vertical Pod Autoscaling (VPA)**: Not implemented, but could be added to optimize resource utilization, can use node autoscaler or karpenter.
+  - **Readiness Probes**: Already implemented to ensure the application is healthy before accepting traffic.
+  - **Liveness Probes**: Already implemented to ensure the application is running and responsive. 
+  - **Rate Limiting**: Not implemented, but could be added to prevent abuse.
 
 - Part 5 (Approach & Tools): Outline the approach you took to complete the task, including any resources, tools, or methods that supported your work.
+
+- Approach: My workflow began with a "plan mode" using Cursor AI, where I provided high-level instructions and iteratively refined the requirements. This involved discussing potential steps with the AI, generating initial code snippets, and then adjusting them based on feedback and deeper understanding of the problem.
+- Tools: The primary tools for code generation and refinement were Cursor AI and Google Antigravity. For local validation, I leveraged a personal development stack including WSL (Windows Subsystem for Linux), Docker Desktop, and Minikube to simulate the target environment and manually verify the functionality and correctness of the generated configurations and code.
+
+
