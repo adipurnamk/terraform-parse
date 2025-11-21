@@ -114,7 +114,7 @@ This document summarizes all the problems identified in the original Helm chart 
 
 ### Health Checks ✅
 - Added liveness and readiness probes
-- Probes target `/api/health` endpoint
+- Probes target `/api/healthz` endpoint
 - Configurable delays and intervals
 
 ### Environment Variables ✅

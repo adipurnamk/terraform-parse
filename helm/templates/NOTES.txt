@@ -16,7 +16,7 @@
 {{- end }}
 
 2. Health check endpoint:
-   kubectl exec -it $(kubectl get pods --namespace {{ .Release.Namespace }} -l "app.kubernetes.io/name={{ include "terraform-parse.name" . }},app.kubernetes.io/instance={{ .Release.Name }}" -o jsonpath="{.items[0].metadata.name}") --namespace {{ .Release.Namespace }} -- curl http://localhost:{{ .Values.service.targetPort }}/api/health
+   kubectl exec -it $(kubectl get pods --namespace {{ .Release.Namespace }} -l "app.kubernetes.io/name={{ include "terraform-parse.name" . }},app.kubernetes.io/instance={{ .Release.Name }}" -o jsonpath="{.items[0].metadata.name}") --namespace {{ .Release.Namespace }} -- curl http://localhost:{{ .Values.service.targetPort }}/api/healthzz
 
 3. API endpoint:
    curl -X POST http://localhost:8080/api/generate \

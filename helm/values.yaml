@@ -1,7 +1,7 @@
 replicaCount: 1
 
 image:
-  repository: terraform-parse
+  repository: adipurnamk/terraform-parse
   tag: latest
   pullPolicy: IfNotPresent
 

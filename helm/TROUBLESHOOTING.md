@@ -144,7 +144,7 @@ kubectl get svc terraform-parse -n terraform-parse -o yaml | grep -A 5 "ports:"
 # Test port connectivity via port-forward
 kubectl port-forward -n terraform-parse svc/terraform-parse 8080:8080 &
 # In another terminal:
-curl http://localhost:8080/api/health
+curl http://localhost:8080/api/healthz
 # Should return 200 OK
 ```
 
@@ -196,7 +196,7 @@ kubectl get pod -n terraform-parse -o json | jq '.items[0].spec.containers[0].re
 ```bash
 # Create a test pod in the same namespace
 kubectl run test-curl --image=curlimages/curl --rm -it --restart=Never -n terraform-parse -- \
-  curl -v http://terraform-parse:8080/api/health
+  curl -v http://terraform-parse:8080/api/healthz
 
 # Test the API endpoint
 kubectl run test-api --image=curlimages/curl --rm -it --restart=Never -n terraform-parse -- \
@@ -267,12 +267,12 @@ kubectl get endpoints -n terraform-parse
 # Port-forward test
 kubectl port-forward -n terraform-parse svc/terraform-parse 8080:8080 &
 sleep 2
-curl http://localhost:8080/api/health
+curl http://localhost:8080/api/healthz
 # Expected: HTTP 200 response
 
 # Test from within cluster
 kubectl run test-curl --image=curlimages/curl --rm -it --restart=Never -n terraform-parse -- \
-  curl -v http://terraform-parse:8080/api/health
+  curl -v http://terraform-parse:8080/api/healthz
 # Expected: Connection successful, 200 OK
 ```
 
